@@ -1,0 +1,13 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_TODOS_API_URL: ${VITE_TODOS_API_URL}
+    image: my-todos-web:latest
+    container_name: my-todos-web
+    ports:
+      - "8080:80"
+    env_file:
+      - .env

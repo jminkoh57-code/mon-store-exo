@@ -143,7 +143,7 @@ export const useAppStore = create(
 
         fetch: async () => {
           const res = await fetch(
-            "https://jsonplaceholder.typicode.com/todos?_limit=5"
+            `${import.meta.env.VITE_TODOS_API_URL}/todos?_limit=5`
           );
 
           const data = await res.json();
