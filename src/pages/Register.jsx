@@ -19,7 +19,7 @@ function Register() {
     });
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (form.password !== form.confirmPassword) {
@@ -27,14 +27,14 @@ function Register() {
       return;
     }
 
-    const registered = user.register({
+    const result = await user.register({
       name: form.name,
       email: form.email,
       password: form.password,
     });
 
-    if (!registered) {
-      alert("Un compte existe déjà avec cet email.");
+    if (!result.ok) {
+      alert(result.message);
       return;
     }
 

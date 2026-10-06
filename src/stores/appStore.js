@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { api } from "../api";
 
 export const useAppStore = create(
   persist(
@@ -35,7 +36,7 @@ export const useAppStore = create(
 
       user: {
         value: null,
-        accounts: [],
+        token: null,
         set: (newUser) =>
           set((state) => ({
             user: {
@@ -48,116 +49,187 @@ export const useAppStore = create(
             user: {
               ...state.user,
               value: null,
+              token: null,
+            },
+            todos: {
+              ...state.todos,
+              value: [],
+              loading: false,
             },
           })),
-        register: (newUser) => {
-          const email = newUser.email.trim().toLowerCase();
-          const exists = get().user.accounts.some(
-            (account) => account.email === email
-          );
-
-          if (exists) return false;
-
-          set((state) => ({
-            user: {
-              ...state.user,
-              accounts: [
-                ...state.user.accounts,
-                {
-                  name: newUser.name.trim(),
-                  email,
-                  password: newUser.password,
-                },
-              ],
-              value: {
-                name: newUser.name.trim(),
-                email,
+        register: async (newUser) => {
+          try {
+            const data = await api("/auth/register", {
+              method: "POST",
+              body: {
+                name: newUser.name,
+                email: newUser.email,
+                password: newUser.password,
               },
-            },
-          }));
+            });
 
-          return true;
+            set((state) => ({
+              user: {
+                ...state.user,
+                value: data.user,
+                token: data.token,
+              },
+              todos: {
+                ...state.todos,
+                value: [],
+              },
+            }));
+
+            return { ok: true };
+          } catch (error) {
+            return {
+              ok: false,
+              message: error.message || "Impossible de créer le compte.",
+            };
+          }
         },
-        login: (email, password) => {
-          const account = get().user.accounts.find(
-            (item) =>
-              item.email === email.trim().toLowerCase() &&
-              item.password === password
-          );
+        login: async (email, password) => {
+          try {
+            const data = await api("/auth/login", {
+              method: "POST",
+              body: { email, password },
+            });
 
-          if (!account) return false;
-
-          set((state) => ({
-            user: {
-              ...state.user,
-              value: {
-                name: account.name,
-                email: account.email,
+            set((state) => ({
+              user: {
+                ...state.user,
+                value: data.user,
+                token: data.token,
               },
-            },
-          }));
+              todos: {
+                ...state.todos,
+                value: [],
+              },
+            }));
 
-          return true;
+            return { ok: true };
+          } catch (error) {
+            return {
+              ok: false,
+              message: error.message || "Email ou mot de passe incorrect.",
+            };
+          }
         },
       },
 
       todos: {
         value: [],
+        loading: false,
 
-        add: (text) =>
-          set((state) => ({
-            todos: {
-              ...state.todos,
-              value: [
-                ...state.todos.value,
-                {
-                  id: Date.now(),
-                  text,
-                  done: false,
-                },
-              ],
-            },
-          })),
-
-        toggle: (id) =>
-          set((state) => ({
-            todos: {
-              ...state.todos,
-              value: state.todos.value.map((todo) =>
-                todo.id === id
-                  ? { ...todo, done: !todo.done }
-                  : todo
-              ),
-            },
-          })),
-
-        delete: (id) =>
-          set((state) => ({
-            todos: {
-              ...state.todos,
-              value: state.todos.value.filter(
-                (todo) => todo.id !== id
-              ),
-            },
-          })),
-
-        fetch: async () => {
-          const res = await fetch(
-            `${import.meta.env.VITE_TODOS_API_URL}/todos?_limit=5`
-          );
-
-          const data = await res.json();
+        add: async (text) => {
+          const token = get().user.token;
+          const todo = await api("/todos", {
+            method: "POST",
+            body: { text },
+            token,
+          });
 
           set((state) => ({
             todos: {
               ...state.todos,
-              value: data.map((todo) => ({
-                id: todo.id,
-                text: todo.title,
-                done: todo.completed,
-              })),
+              value: [...state.todos.value, todo],
             },
           }));
+        },
+
+        show: async (id) => {
+          const token = get().user.token;
+          return api(`/todos/${id}`, { token });
+        },
+
+        update: async (id, text) => {
+          const token = get().user.token;
+          const todo = await api(`/todos/${id}`, {
+            method: "PATCH",
+            body: { text },
+            token,
+          });
+
+          set((state) => ({
+            todos: {
+              ...state.todos,
+              value: state.todos.value.map((item) =>
+                item.id === id ? todo : item
+              ),
+            },
+          }));
+
+          return todo;
+        },
+
+        toggle: async (id) => {
+          const token = get().user.token;
+          const current = get().todos.value.find((item) => item.id === id);
+          const todo = await api(`/todos/${id}`, {
+            method: "PATCH",
+            body: { done: !current?.done },
+            token,
+          });
+
+          set((state) => ({
+            todos: {
+              ...state.todos,
+              value: state.todos.value.map((item) =>
+                item.id === id ? todo : item
+              ),
+            },
+          }));
+        },
+
+        delete: async (id) => {
+          const token = get().user.token;
+          await api(`/todos/${id}`, {
+            method: "DELETE",
+            token,
+          });
+
+          set((state) => ({
+            todos: {
+              ...state.todos,
+              value: state.todos.value.filter((todo) => todo.id !== id),
+            },
+          }));
+        },
+
+        fetch: async () => {
+          const token = get().user.token;
+
+          if (!token) return;
+
+          set((state) => ({
+            todos: {
+              ...state.todos,
+              loading: true,
+            },
+          }));
+
+          try {
+            const data = await api("/todos", { token });
+
+            set((state) => ({
+              todos: {
+                ...state.todos,
+                value: data,
+                loading: false,
+              },
+            }));
+          } catch (error) {
+            if (error.status === 401) {
+              get().user.logout();
+            }
+
+            set((state) => ({
+              todos: {
+                ...state.todos,
+                loading: false,
+              },
+            }));
+          }
         },
       },
     }),
@@ -176,13 +248,14 @@ export const useAppStore = create(
         },
         user: {
           ...currentState.user,
-          value: persistedState?.user?.value ?? currentState.user.value,
-          accounts:
-            persistedState?.user?.accounts ?? currentState.user.accounts,
+          value: persistedState?.user?.token
+            ? persistedState.user.value
+            : null,
+          token: persistedState?.user?.token ?? null,
         },
         todos: {
           ...currentState.todos,
-          value: persistedState?.todos?.value ?? currentState.todos.value,
+          value: [],
         },
       }),
     }

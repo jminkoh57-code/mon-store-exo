@@ -18,13 +18,13 @@ function Login() {
     });
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    const loggedIn = user.login(form.email, form.password);
+    const result = await user.login(form.email, form.password);
 
-    if (!loggedIn) {
-      setError("Email ou mot de passe incorrect.");
+    if (!result.ok) {
+      setError(result.message);
       return;
     }
 

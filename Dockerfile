@@ -12,9 +12,6 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-ARG VITE_TODOS_API_URL
-ENV VITE_TODOS_API_URL=$VITE_TODOS_API_URL
-
 RUN pnpm run build
 
 FROM nginx:alpine

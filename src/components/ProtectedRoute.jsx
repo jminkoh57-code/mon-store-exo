@@ -3,7 +3,8 @@ import { Navigate } from "react-router-dom";
 
 function ProtectedRoute({ children }) {
     const user = useAppStore((s) => s.user.value)
-    if (!user) return <Navigate to="/login"/>
+    const token = useAppStore((s) => s.user.token)
+    if (!user || !token) return <Navigate to="/login"/>
     return children
 }
 

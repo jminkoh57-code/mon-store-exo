@@ -3,11 +3,67 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        VITE_TODOS_API_URL: ${VITE_TODOS_API_URL}
+    depends_on:
+      - api
     image: my-todos-web:latest
     container_name: my-todos-web
     ports:
       - "8080:80"
     env_file:
       - .env
+
+  db:
+    image: mysql:8.4
+    container_name: my-todos-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: todos
+      MYSQL_USER: todos
+      MYSQL_PASSWORD: todos
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  api:
+    build:
+      context: ./api
+    image: my-todos-api:latest
+    container_name: my-todos-api
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: todos
+      DB_PASSWORD: todos
+      DB_NAME: todos
+      JWT_SECRET: mon-store-exo-dev-secret
+    volumes:
+      - ./api/src:/app/src
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: my-todos-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:

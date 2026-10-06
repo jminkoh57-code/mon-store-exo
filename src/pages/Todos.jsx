@@ -1,6 +1,6 @@
 import { useAppStore } from "../stores/appStore";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Todos() {
   const todos = useAppStore((state) => state.todos);
@@ -15,16 +15,18 @@ function Todos() {
       return;
     }
 
-    if (todos.value.length === 0) {
-      todos.fetch();
-    }
+    todos.fetch();
   }, [user.value]);
 
-  const handleAddTodo = () => {
+  const handleAddTodo = async () => {
     if (!text.trim()) return;
 
-    todos.add(text);
-    setText("");
+    try {
+      await todos.add(text);
+      setText("");
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   const handleLogout = () => {
@@ -91,7 +93,11 @@ function Todos() {
             Mes tâches
           </h5>
 
-          {todos.value.length === 0 ? (
+          {todos.loading ? (
+            <p className="text-muted mb-0">
+              Chargement des todos…
+            </p>
+          ) : todos.value.length === 0 ? (
             <p className="text-muted mb-0">
               Aucun todo pour le moment.
             </p>
@@ -124,6 +130,20 @@ function Todos() {
                         ✓ Terminé
                       </span>
                     )}
+
+                    <Link
+                      to={`/todos/${todo.id}`}
+                      className="btn btn-sm btn-outline-secondary"
+                    >
+                      Voir
+                    </Link>
+
+                    <Link
+                      to={`/todos/${todo.id}/edit`}
+                      className="btn btn-sm btn-outline-primary"
+                    >
+                      Modifier
+                    </Link>
 
                     <button
                       type="button"

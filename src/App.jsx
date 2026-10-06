@@ -11,6 +11,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // import Footer from "./layouts/Footer";
 import Navbar from "./layouts/Navbar";
 import Register from "./pages/Register";
+import TodoShow from "./pages/TodoShow";
+import TodoEdit from "./pages/TodoEdit";
 
 function App() {
   // const [user, setUser] = useState(() => {
@@ -53,6 +55,8 @@ function App() {
         <Route path="/login" element={<Login />}></Route>
         <Route path="/register" element={<Register />}></Route>
         <Route path="/todos" element={<ProtectedRoute><Todos /></ProtectedRoute>}></Route>
+        <Route path="/todos/:id/edit" element={<ProtectedRoute><TodoEdit /></ProtectedRoute>}></Route>
+        <Route path="/todos/:id" element={<ProtectedRoute><TodoShow /></ProtectedRoute>}></Route>
         <Route path="*" element={<Navigate to="/todos" />}></Route>
       </Routes>
       {/* <div>
