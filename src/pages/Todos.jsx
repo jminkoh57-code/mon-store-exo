@@ -40,24 +40,36 @@ function Todos() {
 
   return (
     <div className="container py-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="fw-bold">
-            Salut {user.value.name} 👋
-          </h1>
+      <div className="row align-items-center g-4 mb-4">
+        <div className="col-lg-7">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 className="fw-bold">
+                Salut {user.value.name} 👋
+              </h1>
 
-          <p className="text-muted mb-0">
-            Voici tes todos
-          </p>
+              <p className="text-muted mb-0">
+                Voici tes todos
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-outline-danger"
+              onClick={handleLogout}
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-danger"
-          onClick={handleLogout}
-        >
-          Déconnexion
-        </button>
+        <div className="col-lg-5">
+          <img
+            src="/images/taches.svg"
+            alt="Illustration de tes tâches"
+            className="img-fluid rounded-4 shadow-sm"
+          />
+        </div>
       </div>
 
       <div className="card shadow-sm mb-4">
@@ -98,9 +110,17 @@ function Todos() {
               Chargement des todos…
             </p>
           ) : todos.value.length === 0 ? (
-            <p className="text-muted mb-0">
-              Aucun todo pour le moment.
-            </p>
+            <div className="text-center">
+              <img
+                src="/images/accueil-liste.svg"
+                alt=""
+                className="img-fluid rounded-4 mb-3"
+                style={{ maxWidth: "280px" }}
+              />
+              <p className="text-muted mb-0">
+                Aucun todo pour le moment.
+              </p>
+            </div>
           ) : (
             <div className="list-group">
               {todos.value.map((todo) => (

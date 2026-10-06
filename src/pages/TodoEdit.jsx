@@ -45,8 +45,10 @@ function TodoEdit() {
 
   return (
     <div className="container py-5">
-      <div className="card shadow-sm">
-        <div className="card-body">
+      <div className="row align-items-center g-4">
+      <div className="col-lg-7">
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-4">
           <h1 className="h3 fw-bold mb-4">Modifier la tâche</h1>
 
           {error && <p className="text-danger">{error}</p>}
@@ -84,6 +86,15 @@ function TodoEdit() {
             </Link>
           )}
         </div>
+      </div>
+      </div>
+      <div className="col-lg-5">
+        <img
+          src="/images/modifier.svg"
+          alt="Illustration de la modification d'une tâche"
+          className="img-fluid rounded-4 shadow-sm"
+        />
+      </div>
       </div>
     </div>
   );

@@ -42,8 +42,10 @@ function Register() {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="card shadow-sm p-4" style={{ width: "450px" }}>
+    <div className="container py-5">
+      <div className="row align-items-center g-4">
+      <div className="col-lg-6">
+      <div className="card shadow-sm border-0 p-4">
         <div className="card-body">
           <h2 className="text-center fw-bold mb-4">
             Créer un compte
@@ -129,6 +131,15 @@ function Register() {
             </Link>
           </p>
         </div>
+      </div>
+      </div>
+      <div className="col-lg-6">
+        <img
+          src="/images/inscription.svg"
+          alt="Illustration d'une inscription"
+          className="img-fluid rounded-4 shadow-sm"
+        />
+      </div>
       </div>
     </div>
   );

@@ -9,22 +9,20 @@ services:
     container_name: my-todos-web
     ports:
       - "8080:80"
-    env_file:
-      - .env
 
   db:
     image: mysql:8.4
     container_name: my-todos-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: todos
-      MYSQL_USER: todos
-      MYSQL_PASSWORD: todos
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -41,10 +39,10 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 3306
-      DB_USER: todos
-      DB_PASSWORD: todos
-      DB_NAME: todos
-      JWT_SECRET: mon-store-exo-dev-secret
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./api/src:/app/src
     depends_on:
