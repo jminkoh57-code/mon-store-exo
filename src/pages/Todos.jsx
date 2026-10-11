@@ -63,11 +63,12 @@ function Todos() {
           </div>
         </div>
 
-        <div className="col-lg-5">
+        <div className="col-lg-5 d-flex justify-content-lg-end justify-content-center">
           <img
             src="/images/taches.svg"
             alt="Illustration de tes tâches"
-            className="img-fluid rounded-4 shadow-sm"
+            className="rounded-4 shadow-sm"
+            style={{ width: "160px", height: "auto" }}
           />
         </div>
       </div>
