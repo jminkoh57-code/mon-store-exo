@@ -1,7 +1,6 @@
 {
-  "name": "mon-store-exo",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@jminkoh/mon-store-exo",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -28,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jminkoh57-code/mon-store-exo.git"
+    "url": "git+https://github.com/jminkoh57-code/mon-store-exo.git"
   },
   "author": "leseizieme61-cyber <leseizieme61@gmail.com>",
   "bugs": {
