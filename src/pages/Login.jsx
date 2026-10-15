@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppStore } from "../stores/appStore";
+import Icon from "../components/Icon";
+import Photo from "../components/Photo";
+import { photos } from "../data/openverse";
 
 function Login() {
   const user = useAppStore((state) => state.user);
@@ -77,6 +80,7 @@ function Login() {
             )}
 
             <button type="submit" className="btn btn-primary w-100">
+              <Icon name="check" />
               Se connecter
             </button>
           </form>
@@ -91,11 +95,7 @@ function Login() {
       </div>
       </div>
       <div className="col-lg-6">
-        <img
-          src="/images/connexion.svg"
-          alt="Illustration d'une connexion"
-          className="img-fluid rounded-4 shadow-sm"
-        />
+        <Photo photo={photos.ordinateur} />
       </div>
       </div>
     </div>

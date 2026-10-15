@@ -2,7 +2,9 @@ import bcrypt from "bcryptjs";
 import express from "express";
 import jwt from "jsonwebtoken";
 import morgan from "morgan";
+import multer from "multer";
 import { initDb, pool } from "./db.js";
+import { ensureBucket, imageUrl, removeImage, saveImage } from "./storage.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -29,18 +31,49 @@ function publicUser(user) {
   };
 }
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+});
+
+const todoColumns = "id, text, done, image_key, created_at";
+
 function publicTodo(todo) {
   return {
     id: todo.id,
     text: todo.text,
     done: Boolean(todo.done),
+    imageUrl: imageUrl(todo.image_key),
     createdAt: todo.created_at,
   };
 }
 
+function withImage(req, res, next) {
+  const type = req.headers["content-type"] ?? "";
+
+  if (!type.includes("multipart/form-data")) {
+    next();
+    return;
+  }
+
+  upload.single("image")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    if (error.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({ message: "L'image dépasse 2 Mo." });
+      return;
+    }
+
+    res.status(400).json({ message: "Image invalide." });
+  });
+}
+
 async function findTodo(id, userId) {
   const [rows] = await pool.execute(
-    "SELECT id, text, done, created_at FROM todos WHERE id = ? AND user_id = ?",
+    `SELECT ${todoColumns} FROM todos WHERE id = ? AND user_id = ?`,
     [id, userId]
   );
 
@@ -124,7 +157,7 @@ app.post("/api/auth/login", async (req, res) => {
 
 app.get("/api/todos", requireAuth, async (req, res) => {
   const [rows] = await pool.execute(
-    "SELECT id, text, done, created_at FROM todos WHERE user_id = ? ORDER BY id ASC",
+    `SELECT ${todoColumns} FROM todos WHERE user_id = ? ORDER BY id ASC`,
     [req.auth.userId]
   );
 
@@ -142,7 +175,7 @@ app.get("/api/todos/:id", requireAuth, async (req, res) => {
   res.json(publicTodo(todo));
 });
 
-app.post("/api/todos", requireAuth, async (req, res) => {
+app.post("/api/todos", requireAuth, withImage, async (req, res) => {
   const text = String(req.body?.text ?? "").trim();
 
   if (!text) {
@@ -150,23 +183,45 @@ app.post("/api/todos", requireAuth, async (req, res) => {
     return;
   }
 
+  let imageKey = null;
+
+  try {
+    if (req.file) {
+      imageKey = await saveImage(req.auth.userId, req.file);
+    }
+  } catch (error) {
+    res.status(error.status ?? 500).json({
+      message: error.status ? error.message : "Impossible d'enregistrer l'image.",
+    });
+    return;
+  }
+
   const [result] = await pool.execute(
-    "INSERT INTO todos (user_id, text) VALUES (?, ?)",
-    [req.auth.userId, text]
+    "INSERT INTO todos (user_id, text, image_key) VALUES (?, ?, ?)",
+    [req.auth.userId, text, imageKey]
   );
 
   const [rows] = await pool.execute(
-    "SELECT id, text, done, created_at FROM todos WHERE id = ?",
+    `SELECT ${todoColumns} FROM todos WHERE id = ?`,
     [result.insertId]
   );
 
   res.status(201).json(publicTodo(rows[0]));
 });
 
-app.patch("/api/todos/:id", requireAuth, async (req, res) => {
+app.patch("/api/todos/:id", requireAuth, withImage, async (req, res) => {
   const id = Number(req.params.id);
+  const current = await findTodo(id, req.auth.userId);
+
+  if (!current) {
+    res.status(404).json({ message: "Todo introuvable." });
+    return;
+  }
+
   const updates = [];
   const params = [];
+  let nextImageKey = current.image_key;
+  const removeImageFlag = req.body?.removeImage === true || req.body?.removeImage === "true";
 
   if (req.body?.text !== undefined) {
     const text = String(req.body.text).trim();
@@ -183,6 +238,22 @@ app.patch("/api/todos/:id", requireAuth, async (req, res) => {
   if (req.body?.done !== undefined) {
     updates.push("done = ?");
     params.push(req.body.done ? 1 : 0);
+  }
+
+  try {
+    if (req.file) {
+      nextImageKey = await saveImage(req.auth.userId, req.file);
+      updates.push("image_key = ?");
+      params.push(nextImageKey);
+    } else if (removeImageFlag && current.image_key) {
+      nextImageKey = null;
+      updates.push("image_key = NULL");
+    }
+  } catch (error) {
+    res.status(error.status ?? 500).json({
+      message: error.status ? error.message : "Impossible d'enregistrer l'image.",
+    });
+    return;
   }
 
   if (updates.length === 0) {
@@ -203,25 +274,34 @@ app.patch("/api/todos/:id", requireAuth, async (req, res) => {
   }
 
   const todo = await findTodo(id, req.auth.userId);
+
+  if (current.image_key && current.image_key !== todo.image_key) {
+    await removeImage(current.image_key);
+  }
+
   res.json(publicTodo(todo));
 });
 
 app.delete("/api/todos/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  const [result] = await pool.execute(
-    "DELETE FROM todos WHERE id = ? AND user_id = ?",
-    [id, req.auth.userId]
-  );
+  const current = await findTodo(id, req.auth.userId);
 
-  if (result.affectedRows === 0) {
+  if (!current) {
     res.status(404).json({ message: "Todo introuvable." });
     return;
   }
 
+  await pool.execute(
+    "DELETE FROM todos WHERE id = ? AND user_id = ?",
+    [id, req.auth.userId]
+  );
+
+  await removeImage(current.image_key);
   res.status(204).end();
 });
 
 await initDb();
+await ensureBucket();
 
 app.listen(port, () => {
   console.log(`API prête sur le port ${port}`);

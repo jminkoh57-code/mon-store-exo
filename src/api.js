@@ -1,11 +1,18 @@
-async function api(path, { method = "GET", body, token } = {}) {
+async function api(path, { method = "GET", body, form, token } = {}) {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  let payload;
+
+  if (form) {
+    payload = form;
+  } else if (body) {
+    headers["Content-Type"] = "application/json";
+    payload = JSON.stringify(body);
+  }
+
   const response = await fetch(`/api${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    headers,
+    body: payload,
   });
 
   if (response.status === 204) {

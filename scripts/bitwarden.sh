@@ -105,6 +105,13 @@ load_from_vault() {
     fi
     export "$key=$value"
   done
+
+  for key in MINIO_ROOT_USER MINIO_ROOT_PASSWORD; do
+    value="$(jq -r --arg name "$key" '.fields[] | select(.name == $name) | .value' <<<"$item")"
+    if [[ -n "$value" && "$value" != "null" ]]; then
+      export "$key=$value"
+    fi
+  done
 }
 
 cmd_compose() {

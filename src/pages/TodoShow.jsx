@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAppStore } from "../stores/appStore";
+import Icon from "../components/Icon";
+import Photo from "../components/Photo";
+import { photos } from "../data/openverse";
 
 function TodoShow() {
   const { id } = useParams();
@@ -42,6 +45,19 @@ function TodoShow() {
               <dt className="col-sm-3">Texte</dt>
               <dd className="col-sm-9">{todo.text}</dd>
 
+              {todo.imageUrl && (
+                <>
+                  <dt className="col-sm-3">Image</dt>
+                  <dd className="col-sm-9">
+                    <img
+                      src={todo.imageUrl}
+                      alt={todo.text}
+                      className="todo-image rounded-4"
+                    />
+                  </dd>
+                </>
+              )}
+
               <dt className="col-sm-3">Statut</dt>
               <dd className="col-sm-9">
                 {todo.done ? "Terminée" : "À faire"}
@@ -56,11 +72,13 @@ function TodoShow() {
 
           <div className="d-flex gap-2 mt-4">
             <Link to="/todos" className="btn btn-outline-secondary">
+              <Icon name="list" />
               Retour
             </Link>
 
             {!error && (
               <Link to={`/todos/${id}/edit`} className="btn btn-primary">
+                <Icon name="pencil" />
                 Modifier
               </Link>
             )}
@@ -69,11 +87,7 @@ function TodoShow() {
       </div>
       </div>
       <div className="col-lg-5">
-        <img
-          src="/images/detail.svg"
-          alt="Illustration du détail d'une tâche"
-          className="img-fluid rounded-4 shadow-sm"
-        />
+        <Photo photo={photos.notes} />
       </div>
       </div>
     </div>

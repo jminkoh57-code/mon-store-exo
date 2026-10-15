@@ -2,12 +2,16 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-RUN npm ci
+RUN corepack enable && corepack prepare pnpm@12.6.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]

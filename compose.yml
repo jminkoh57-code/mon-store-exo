@@ -43,13 +43,34 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_NAME: ${MYSQL_DATABASE}
       JWT_SECRET: ${JWT_SECRET}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: todo-images
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-todos}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-todos-minio}
+      S3_PUBLIC_URL: /storage
     volumes:
       - ./api/src:/app/src
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     ports:
       - "3000:3000"
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: my-todos-minio
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-todos}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-todos-minio}
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    volumes:
+      - minio_data:/data
 
   phpmyadmin:
     image: phpmyadmin:5
@@ -65,3 +86,4 @@ services:
 
 volumes:
   mysql_data:
+  minio_data:

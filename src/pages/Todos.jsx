@@ -1,6 +1,9 @@
 import { useAppStore } from "../stores/appStore";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Icon from "../components/Icon";
+import Photo from "../components/Photo";
+import { photos } from "../data/openverse";
 
 function Todos() {
   const todos = useAppStore((state) => state.todos);
@@ -8,6 +11,8 @@ function Todos() {
 
   const navigate = useNavigate();
   const [text, setText] = useState("");
+  const [image, setImage] = useState(null);
+  const fileInput = useRef(null);
 
   useEffect(() => {
     if (user.value === null) {
@@ -22,8 +27,12 @@ function Todos() {
     if (!text.trim()) return;
 
     try {
-      await todos.add(text);
+      await todos.add(text, image);
       setText("");
+      setImage(null);
+      if (fileInput.current) {
+        fileInput.current.value = "";
+      }
     } catch (error) {
       alert(error.message);
     }
@@ -58,18 +67,14 @@ function Todos() {
               className="btn btn-outline-danger"
               onClick={handleLogout}
             >
+              <Icon name="logout" />
               Déconnexion
             </button>
           </div>
         </div>
 
         <div className="col-lg-5 d-flex justify-content-lg-end justify-content-center">
-          <img
-            src="/images/taches.svg"
-            alt="Illustration de tes tâches"
-            className="rounded-4 shadow-sm"
-            style={{ width: "160px", height: "auto" }}
-          />
+          <Photo photo={photos.dessin} className="photo-frame-sm" />
         </div>
       </div>
 
@@ -94,8 +99,26 @@ function Todos() {
               className="btn btn-primary"
               onClick={handleAddTodo}
             >
+              <Icon name="plus" />
               Ajouter
             </button>
+          </div>
+
+          <div className="mt-3">
+            <label className="form-label" htmlFor="todo-image">
+              Image de la tâche
+            </label>
+            <input
+              id="todo-image"
+              ref={fileInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="form-control"
+              onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            />
+            <div className="form-text">
+              Facultatif. JPEG, PNG, WebP ou GIF, 2 Mo maximum.
+            </div>
           </div>
         </div>
       </div>
@@ -111,17 +134,10 @@ function Todos() {
               Chargement des todos…
             </p>
           ) : todos.value.length === 0 ? (
-            <div className="text-center">
-              <img
-                src="/images/accueil-liste.svg"
-                alt=""
-                className="img-fluid rounded-4 mb-3"
-                style={{ maxWidth: "280px" }}
-              />
-              <p className="text-muted mb-0">
-                Aucun todo pour le moment.
-              </p>
-            </div>
+            <p className="text-muted mb-0">
+              <Icon name="list" />
+              Aucun todo pour le moment.
+            </p>
           ) : (
             <div className="list-group">
               {todos.value.map((todo) => (
@@ -132,8 +148,15 @@ function Todos() {
                   <button
                     type="button"
                     onClick={() => todos.toggle(todo.id)}
-                    className="btn text-start flex-grow-1"
+                    className="btn text-start flex-grow-1 d-flex align-items-center gap-3"
                   >
+                    {todo.imageUrl && (
+                      <img
+                        src={todo.imageUrl}
+                        alt=""
+                        className="todo-thumb rounded"
+                      />
+                    )}
                     <span
                       className={
                         todo.done
@@ -156,6 +179,7 @@ function Todos() {
                       to={`/todos/${todo.id}`}
                       className="btn btn-sm btn-outline-secondary"
                     >
+                      <Icon name="eye" />
                       Voir
                     </Link>
 
@@ -163,6 +187,7 @@ function Todos() {
                       to={`/todos/${todo.id}/edit`}
                       className="btn btn-sm btn-outline-primary"
                     >
+                      <Icon name="pencil" />
                       Modifier
                     </Link>
 
@@ -171,6 +196,7 @@ function Todos() {
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => todos.delete(todo.id)}
                     >
+                      <Icon name="trash" />
                       Supprimer
                     </button>
                   </div>

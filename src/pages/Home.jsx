@@ -1,19 +1,25 @@
 import { Link } from "react-router-dom";
 import { useAppStore } from "../stores/appStore";
+import Icon from "../components/Icon";
+import Photo from "../components/Photo";
+import { photos } from "../data/openverse";
 
 const highlights = [
   {
-    image: "/images/accueil-compte.svg",
+    photo: photos.bureau,
+    icon: "user",
     title: "Un compte à toi",
     text: "Inscris-toi pour retrouver tes tâches sur cet appareil.",
   },
   {
-    image: "/images/accueil-liste.svg",
+    photo: photos.notes,
+    icon: "list",
     title: "Une liste claire",
     text: "Ajoute, consulte et modifie chaque tâche.",
   },
   {
-    image: "/images/accueil-sauve.svg",
+    photo: photos.carnet,
+    icon: "check",
     title: "Tout est conservé",
     text: "Tes todos restent enregistrés dans la base de données.",
   },
@@ -37,14 +43,17 @@ function Home() {
           <div className="d-flex flex-wrap gap-2 mt-4">
             {user ? (
               <Link to="/todos" className="btn btn-primary btn-lg">
+                <Icon name="list" />
                 Voir mes tâches
               </Link>
             ) : (
               <>
                 <Link to="/register" className="btn btn-primary btn-lg">
+                  <Icon name="user" />
                   Créer un compte
                 </Link>
                 <Link to="/login" className="btn btn-outline-primary btn-lg">
+                  <Icon name="check" />
                   Se connecter
                 </Link>
               </>
@@ -53,11 +62,7 @@ function Home() {
         </div>
 
         <div className="col-lg-6">
-          <img
-            src="/images/accueil-taches.svg"
-            alt="Illustration d'une liste de tâches"
-            className="img-fluid rounded-4 shadow-sm"
-          />
+          <Photo photo={photos.taches} />
         </div>
       </div>
 
@@ -65,13 +70,12 @@ function Home() {
         {highlights.map((item) => (
           <div className="col-md-4" key={item.title}>
             <div className="card h-100 shadow-sm border-0">
-              <img
-                src={item.image}
-                alt=""
-                className="card-img-top"
-              />
+              <Photo photo={item.photo} />
               <div className="card-body">
-                <h2 className="h5 fw-bold">{item.title}</h2>
+                <h2 className="h5 fw-bold">
+                  <Icon name={item.icon} />
+                  {item.title}
+                </h2>
                 <p className="text-muted mb-0">{item.text}</p>
               </div>
             </div>

@@ -121,11 +121,18 @@ export const useAppStore = create(
         value: [],
         loading: false,
 
-        add: async (text) => {
+        add: async (text, imageFile) => {
           const token = get().user.token;
+          const form = new FormData();
+          form.append("text", text);
+
+          if (imageFile) {
+            form.append("image", imageFile);
+          }
+
           const todo = await api("/todos", {
             method: "POST",
-            body: { text },
+            form,
             token,
           });
 
@@ -142,11 +149,22 @@ export const useAppStore = create(
           return api(`/todos/${id}`, { token });
         },
 
-        update: async (id, text) => {
+        update: async (id, fields) => {
           const token = get().user.token;
+          const form = new FormData();
+          form.append("text", fields.text);
+
+          if (fields.imageFile) {
+            form.append("image", fields.imageFile);
+          }
+
+          if (fields.removeImage) {
+            form.append("removeImage", "true");
+          }
+
           const todo = await api(`/todos/${id}`, {
             method: "PATCH",
-            body: { text },
+            form,
             token,
           });
 

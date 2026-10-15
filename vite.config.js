@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:3000",
+      "/storage": {
+        target: "http://localhost:9100",
+        rewrite: (path) => path.replace(/^\/storage/, "/todo-images"),
+      },
     },
   },
 })

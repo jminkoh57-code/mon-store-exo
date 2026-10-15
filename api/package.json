@@ -2,15 +2,18 @@
   "name": "mon-store-exo-api",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.6.0",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon --watch src --legacy-watch src/index.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "bcryptjs": "^3.0.2",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
+    "multer": "^2.4.0",
     "mysql2": "^3.14.1"
   },
   "devDependencies": {

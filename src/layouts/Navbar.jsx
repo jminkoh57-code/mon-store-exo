@@ -1,3 +1,5 @@
+import Icon from "../components/Icon";
+
 function Navbar() {
     return (
         <nav className="navbar navbar-expand-lg bg-body-tertiary">
@@ -34,19 +36,22 @@ function Navbar() {
 
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
                         <li className="nav-item">
-                            <a className="nav-link" href="/">
+                            <a className="nav-link d-inline-flex align-items-center" href="/">
+                                <Icon name="home" />
                                 Accueil
                             </a>
                         </li>
 
                         <li className="nav-item">
-                            <a className="nav-link" href="/todos">
+                            <a className="nav-link d-inline-flex align-items-center" href="/todos">
+                                <Icon name="list" />
                                 Todos
                             </a>
                         </li>
 
                         <li className="nav-item">
-                            <a className="nav-link" href="/register">
+                            <a className="nav-link d-inline-flex align-items-center" href="/register">
+                                <Icon name="user" />
                                 Register
                             </a>
                         </li>

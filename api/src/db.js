@@ -40,6 +40,16 @@ async function initDb() {
         for (const statement of schema.split(";").map((sql) => sql.trim()).filter(Boolean)) {
           await connection.query(statement);
         }
+
+        const [columns] = await connection.query(
+          "SHOW COLUMNS FROM todos LIKE 'image_key'"
+        );
+
+        if (columns.length === 0) {
+          await connection.query(
+            "ALTER TABLE todos ADD COLUMN image_key VARCHAR(255) NULL"
+          );
+        }
       } finally {
         connection.release();
       }
