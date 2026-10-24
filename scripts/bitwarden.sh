@@ -5,10 +5,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/.env"
 ITEM_NAME="mon-store-exo"
 KEYS=(
-  MYSQL_ROOT_PASSWORD
-  MYSQL_DATABASE
-  MYSQL_USER
-  MYSQL_PASSWORD
   JWT_SECRET
 )
 

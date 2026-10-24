@@ -1,62 +1,96 @@
 services:
   web:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
     depends_on:
       - api
     image: my-todos-web:latest
     container_name: my-todos-web
+    networks:
+      - public
+      - private
     ports:
       - "8080:80"
 
-  db:
-    image: mysql:8.4
-    container_name: my-todos-db
+  mongo:
+    image: mongo:7
+    container_name: my-todos-mongo
     restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "27018:27017"
+    networks:
+      - public
+      - private
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 20
-      start_period: 20s
+      start_period: 10s
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: my-todos-redis
+    restart: unless-stopped
+    networks:
+      - private
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   api:
     build:
-      context: ./api
+      context: ./backend
     image: my-todos-api:latest
     container_name: my-todos-api
     restart: unless-stopped
     environment:
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_USER: ${MYSQL_USER}
-      DB_PASSWORD: ${MYSQL_PASSWORD}
-      DB_NAME: ${MYSQL_DATABASE}
-      JWT_SECRET: ${JWT_SECRET}
+      MONGO_URI: mongodb://mongo:27017/todos
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: todo-images
       S3_ACCESS_KEY: ${MINIO_ROOT_USER:-todos}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-todos-minio}
       S3_PUBLIC_URL: /storage
     volumes:
-      - ./api/src:/app/src
+      - ./backend/src:/app/src
     depends_on:
-      db:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - private
+
+  worker:
+    build:
+      context: ./backend
+    image: my-todos-api:latest
+    container_name: my-todos-worker
+    restart: unless-stopped
+    command: ["pnpm", "run", "dev:worker"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: todo-images
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-todos}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-todos-minio}
+      S3_PUBLIC_URL: /storage
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      redis:
         condition: service_healthy
       minio:
         condition: service_started
-    ports:
-      - "3000:3000"
+    networks:
+      - private
 
   minio:
     image: cgr.dev/chainguard/minio:latest
@@ -66,24 +100,32 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-todos}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-todos-minio}
-    ports:
-      - "9100:9000"
-      - "9101:9001"
+    networks:
+      - private
     volumes:
       - minio_data:/data
 
-  phpmyadmin:
-    image: phpmyadmin:5
-    container_name: my-todos-phpmyadmin
+  mongo-express:
+    image: mongo-express:1
+    container_name: my-todos-mongo-express
     restart: unless-stopped
     ports:
-      - "8081:80"
+      - "8081:8081"
     environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_BASICAUTH: "false"
+    networks:
+      - public
+      - private
     depends_on:
-      - db
+      mongo:
+        condition: service_healthy
+
+networks:
+  public:
+  private:
+    internal: true
 
 volumes:
-  mysql_data:
+  mongo_data:
   minio_data:

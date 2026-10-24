@@ -1,0 +1,4 @@
+allowBuilds:
+  msgpackr-extract: false
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-s3@3.1152.0'
