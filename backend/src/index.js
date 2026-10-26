@@ -11,7 +11,11 @@ import { imageUrl } from "./storage.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
-const jwtSecret = process.env.JWT_SECRET || "dev-secret";
+const jwtSecret = process.env.JWT_SECRET;
+
+if (!jwtSecret) {
+  throw new Error("JWT_SECRET manquant.");
+}
 
 app.use(express.json());
 app.use(morgan((tokens, req, res) => {

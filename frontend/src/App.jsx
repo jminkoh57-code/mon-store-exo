@@ -47,11 +47,21 @@ function App() {
   // }
 
   // return <Profil user={user} onLogout={logout} />;
+  function skipToContent(event) {
+    const content = document.getElementById("contenu");
+    if (!content) return;
+
+    event.preventDefault();
+    content.focus();
+  }
+
   return (
     <BrowserRouter>
-      <div>
-        <Navbar />
-      </div>
+      <a className="skip-link" href="#contenu" onClick={skipToContent}>
+        Aller au contenu
+      </a>
+      <Navbar />
+      <main id="contenu" tabIndex={-1}>
       <Routes>
         <Route path="/" element={<Home />}></Route>
         <Route path="/login" element={<Login />}></Route>
@@ -89,6 +99,7 @@ function App() {
         ></Route>
         <Route path="*" element={<Navigate to="/" />}></Route>
       </Routes>
+      </main>
       {/* <div>
         <Footer />
       </div> */}
