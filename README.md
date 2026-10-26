@@ -2,10 +2,6 @@
 
 Application de todos en MERN, avec une file BullMQ pour les images.
 
-<p align="center">
-  <img src="https://media.giphy.com/media/3o7TKu8Xj5cBq9p0pi/giphy.gif" alt="Démo de l'application" width="700">
-</p>
-
 ## Dossiers
 
 - `frontend/` : React, Vite, Zustand. Nginx sert le build et proxy `/api` et `/storage`.
