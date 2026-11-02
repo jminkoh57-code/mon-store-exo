@@ -1,6 +1,26 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { api } from "../api";
+import { apiError, setTokenReader, trpc } from "../trpc";
+
+function readImage(file) {
+  if (!file) return null;
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      const data = result.includes(",") ? result.split(",")[1] : result;
+      resolve({
+        mimetype: file.type || "application/octet-stream",
+        data,
+      });
+    };
+
+    reader.onerror = () => reject(new Error("Image invalide."));
+    reader.readAsDataURL(file);
+  });
+}
 
 export const useAppStore = create(
   persist(
@@ -59,13 +79,10 @@ export const useAppStore = create(
           })),
         register: async (newUser) => {
           try {
-            const data = await api("/auth/register", {
-              method: "POST",
-              body: {
-                name: newUser.name,
-                email: newUser.email,
-                password: newUser.password,
-              },
+            const data = await trpc.auth.register.mutate({
+              name: newUser.name,
+              email: newUser.email,
+              password: newUser.password,
             });
 
             set((state) => ({
@@ -84,16 +101,13 @@ export const useAppStore = create(
           } catch (error) {
             return {
               ok: false,
-              message: error.message || "Impossible de créer le compte.",
+              message: apiError(error).message,
             };
           }
         },
         login: async (email, password) => {
           try {
-            const data = await api("/auth/login", {
-              method: "POST",
-              body: { email, password },
-            });
+            const data = await trpc.auth.login.mutate({ email, password });
 
             set((state) => ({
               user: {
@@ -111,7 +125,8 @@ export const useAppStore = create(
           } catch (error) {
             return {
               ok: false,
-              message: error.message || "Email ou mot de passe incorrect.",
+              message:
+                apiError(error).message || "Email ou mot de passe incorrect.",
             };
           }
         },
@@ -122,18 +137,9 @@ export const useAppStore = create(
         loading: false,
 
         add: async (text, imageFile) => {
-          const token = get().user.token;
-          const form = new FormData();
-          form.append("text", text);
-
-          if (imageFile) {
-            form.append("image", imageFile);
-          }
-
-          const todo = await api("/todos", {
-            method: "POST",
-            form,
-            token,
+          const todo = await trpc.todos.create.mutate({
+            text,
+            image: await readImage(imageFile),
           });
 
           set((state) => ({
@@ -145,27 +151,15 @@ export const useAppStore = create(
         },
 
         show: async (id) => {
-          const token = get().user.token;
-          return api(`/todos/${id}`, { token });
+          return trpc.todos.byId.query({ id });
         },
 
         update: async (id, fields) => {
-          const token = get().user.token;
-          const form = new FormData();
-          form.append("text", fields.text);
-
-          if (fields.imageFile) {
-            form.append("image", fields.imageFile);
-          }
-
-          if (fields.removeImage) {
-            form.append("removeImage", "true");
-          }
-
-          const todo = await api(`/todos/${id}`, {
-            method: "PATCH",
-            form,
-            token,
+          const todo = await trpc.todos.update.mutate({
+            id,
+            text: fields.text,
+            image: await readImage(fields.imageFile),
+            removeImage: Boolean(fields.removeImage),
           });
 
           set((state) => ({
@@ -181,12 +175,10 @@ export const useAppStore = create(
         },
 
         toggle: async (id) => {
-          const token = get().user.token;
           const current = get().todos.value.find((item) => item.id === id);
-          const todo = await api(`/todos/${id}`, {
-            method: "PATCH",
-            body: { done: !current?.done },
-            token,
+          const todo = await trpc.todos.update.mutate({
+            id,
+            done: !current?.done,
           });
 
           set((state) => ({
@@ -200,11 +192,7 @@ export const useAppStore = create(
         },
 
         delete: async (id) => {
-          const token = get().user.token;
-          await api(`/todos/${id}`, {
-            method: "DELETE",
-            token,
-          });
+          await trpc.todos.delete.mutate({ id });
 
           set((state) => ({
             todos: {
@@ -215,9 +203,7 @@ export const useAppStore = create(
         },
 
         fetch: async () => {
-          const token = get().user.token;
-
-          if (!token) return;
+          if (!get().user.token) return;
 
           set((state) => ({
             todos: {
@@ -227,7 +213,7 @@ export const useAppStore = create(
           }));
 
           try {
-            const data = await api("/todos", { token });
+            const data = await trpc.todos.list.query();
 
             set((state) => ({
               todos: {
@@ -237,7 +223,7 @@ export const useAppStore = create(
               },
             }));
           } catch (error) {
-            if (error.status === 401) {
+            if (apiError(error).status === 401) {
               get().user.logout();
             }
 
@@ -279,3 +265,5 @@ export const useAppStore = create(
     }
   )
 );
+
+setTokenReader(() => useAppStore.getState().user.token);
